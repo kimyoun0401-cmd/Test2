@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4eee6">
+  <title>문장에서 전시를 꺼내다</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f4eee6;
+      --ink: #272923;
+      --muted: #79786f;
+      --accent: #627b6c;
+      --accent-dark: #405c4b;
+      --wash: #e7e8df;
+      --line: rgba(39, 41, 35, .13);
+      --card: rgba(255, 253, 249, .78);
+      --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", "Batang", serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background: var(--paper);
+      transition: background .55s ease, color .35s ease;
+    }
+    body[data-mood="warm"] { --paper: #f4e9dc; --accent: #a26e4f; --accent-dark: #795039; --wash: #eddbca; }
+    body[data-mood="night"] { --paper: #e9e8ed; --ink: #272733; --muted: #6e6c7b; --accent: #666383; --accent-dark: #4b4966; --wash: #d9d8e4; --line: rgba(39,39,51,.14); --card: rgba(250,249,253,.78); }
+    button, textarea, select, input { font: inherit; }
+    button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 3px; }
+    .page { max-width: 1280px; padding: 34px 6vw 48px; margin: auto; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 13px; letter-spacing: .08em; font-weight: 650; }
+    .brand-mark { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--accent); border-radius: 50%; color: var(--accent-dark); font-family: var(--serif); font-size: 17px; }
+    .mode-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 11px; letter-spacing: .04em; }
+    .mode-badge::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+    main { padding-top: clamp(38px, 7vh, 78px); }
+    .intro { max-width: 720px; margin-bottom: 38px; }
+    .eyebrow { margin: 0 0 14px; color: var(--accent-dark); font-size: 11px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: var(--serif); font-size: clamp(38px, 5vw, 64px); font-weight: 400; letter-spacing: -.045em; line-height: 1.1; }
+    .lead { max-width: 500px; margin: 17px 0 0; color: var(--muted); font-size: 14px; line-height: 1.85; }
+    .workspace { display: grid; grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: clamp(24px, 5vw, 68px); align-items: stretch; }
+    .editor { padding: 25px 0 0; }
+    .field-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+    label, .field-label { font-size: 13px; font-weight: 650; }
+    .counter { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    textarea { width: 100%; min-height: 205px; resize: vertical; padding: 18px 18px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink); background: var(--card); font-size: 14px; line-height: 1.8; transition: border-color .2s, background .4s; }
+    textarea::placeholder { color: #aaa69e; }
+    .helper { margin: 9px 0 25px; color: var(--muted); font-size: 11px; }
+    .mood-heading { margin-bottom: 12px; }
+    .moods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .mood { min-height: 49px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); background: transparent; cursor: pointer; font-size: 12px; transition: .2s; }
+    .mood:hover { border-color: var(--accent); }
+    .mood[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-dark); background: var(--wash); font-weight: 650; }
+    .mode-control { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 23px 0 15px; }
+    .mode-control label { color: var(--muted); font-size: 11px; font-weight: 500; }
+    select, .endpoint { min-height: 40px; border: 1px solid var(--line); border-radius: 3px; color: var(--ink); background: var(--card); font-size: 12px; }
+    select { padding: 0 30px 0 10px; }
+    .api-config { display: none; margin: 0 0 15px; }
+    .api-config.visible { display: block; }
+    .endpoint { width: 100%; margin-top: 7px; padding: 0 10px; }
+    .api-field + .api-field { margin-top: 14px; }
+    .api-note { margin: 7px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+    .generate { display: flex; width: 100%; min-height: 54px; align-items: center; justify-content: center; gap: 11px; border: 0; border-radius: 3px; color: #fffdf9; background: var(--accent-dark); cursor: pointer; font-size: 13px; font-weight: 650; letter-spacing: .035em; transition: transform .2s, opacity .2s, background .3s; }
+    .generate:hover:not(:disabled) { transform: translateY(-2px); }
+    .generate:disabled { cursor: wait; opacity: .68; }
+    .arrow { font-size: 18px; font-weight: 400; }
+    .status { min-height: 24px; margin: 12px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .status.error { color: #a34c43; }
+    .result { position: relative; display: flex; min-height: 440px; flex-direction: column; justify-content: center; overflow: hidden; padding: clamp(30px, 5vw, 62px); border: 1px solid var(--line); background: var(--wash); transition: background .5s ease; }
+    .result::before, .result::after { position: absolute; content: ""; pointer-events: none; }
+    .result::before { top: -90px; right: -50px; width: 270px; height: 270px; border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 50%; }
+    .result::after { top: -45px; right: -5px; width: 180px; height: 180px; border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); border-radius: 50%; }
+    .result-inner { position: relative; z-index: 1; max-width: 510px; }
+    .result-kicker { display: flex; align-items: center; gap: 10px; margin-bottom: 42px; color: var(--accent-dark); font-size: 10px; font-weight: 700; letter-spacing: .17em; }
+    .result-kicker::before { content: ""; width: 22px; height: 1px; background: var(--accent); }
+    .result-title { margin: 0; font-family: var(--serif); font-size: clamp(34px, 4.5vw, 56px); font-weight: 400; letter-spacing: -.04em; line-height: 1.25; word-break: keep-all; }
+    .result-desc { max-width: 420px; margin: 22px 0 0; color: color-mix(in srgb, var(--ink) 72%, transparent); font-family: var(--serif); font-size: 15px; line-height: 1.95; word-break: keep-all; }
+    .result-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 48px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); color: var(--muted); font-size: 10px; letter-spacing: .08em; }
+    footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 35px; color: var(--muted); font-size: 10px; }
+    @media (max-width: 760px) {
+      .page { padding: 22px 22px 32px; }
+      main { padding-top: 42px; }
+      .intro { margin-bottom: 26px; }
+      .workspace { grid-template-columns: 1fr; gap: 28px; }
+      .editor { padding-top: 0; }
+      textarea { min-height: 165px; }
+      .result { min-height: 340px; }
+      .result-kicker { margin-bottom: 30px; }
+      .result-foot { margin-top: 36px; }
+    }
+    @media (max-width: 420px) {
+      .page { padding-right: 17px; padding-left: 17px; }
+      .moods { gap: 6px; }
+      .mood { font-size: 11px; }
+      .result { padding: 28px 24px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body data-mood="quiet">
+  <div class="page">
+    <header>
+      <div class="brand"><span class="brand-mark" aria-hidden="true">ㅁ</span><span>문장 수집실</span></div>
+      <span class="mode-badge" id="modeBadge">예제 모드 · API 연결 없음</span>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="pageTitle">
+        <p class="eyebrow">A small exhibition begins with a sentence</p>
+        <h1 id="pageTitle">문장에서 전시를<br>꺼내다</h1>
+        <p class="lead">마음에 남은 문장을 적어주세요. 그 안의 감정과 풍경을 읽어 전시 제목과 짧은 소개를 제안합니다.</p>
+      </section>
+      <section class="workspace" aria-label="전시 문장 생성기">
+        <form class="editor" id="generatorForm" novalidate>
+          <div class="field-head"><label for="sourceText">전시의 씨앗이 될 문장</label><span class="counter" id="counter">0 / 3000</span></div>
+          <textarea id="sourceText" maxlength="3000" placeholder="예: 오래된 창문으로 오후의 빛이 천천히 들어왔다." aria-describedby="inputHelp status" required></textarea>
+          <p class="helper" id="inputHelp">1자 이상 3000자 이하로 입력해주세요.</p>
+          <div class="field-head mood-heading"><span class="field-label" id="moodLabel">전시의 분위기</span></div>
+          <div class="moods" role="group" aria-labelledby="moodLabel">
+            <button class="mood" type="button" data-mood-choice="quiet" aria-pressed="true">고요함</button>
+            <button class="mood" type="button" data-mood-choice="warm" aria-pressed="false">따뜻함</button>
+            <button class="mood" type="button" data-mood-choice="night" aria-pressed="false">밤의 풍경</button>
+          </div>
+          <div class="mode-control">
+            <label for="modeSelect">응답 방식</label>
+            <select id="modeSelect" aria-label="응답 방식">
+              <option value="example">예제 모드 (API 없이 미리보기)</option>
+              <option value="api">실제 API 모드</option>
+            </select>
+          </div>
+          <div class="api-config" id="apiConfig">
+            <div class="api-field">
+              <label class="field-label" for="accessCode">실습 접속 코드</label>
+              <input class="endpoint" id="accessCode" type="password" placeholder="실습 접속 코드를 입력하세요" autocomplete="one-time-code" maxlength="128" required>
+            </div>
+            <p class="api-note">접속 코드는 서버에서 확인합니다. 문장은 AI 응답 생성을 위해 OpenAI로 전송됩니다.</p>
+          </div>
+          <button class="generate" id="generateButton" type="submit"><span id="buttonLabel">전시 문장 만들기</span><span class="arrow" aria-hidden="true">↗</span></button>
+          <p class="status" id="status" role="status" aria-live="polite">예제 모드로 준비되어 있어요. 입력한 문장은 외부로 전송되지 않습니다.</p>
+        </form>
+        <section class="result" aria-labelledby="resultTitle" aria-live="polite">
+          <div class="result-inner">
+            <div class="result-kicker">YOUR EXHIBITION</div>
+            <h2 class="result-title" id="resultTitle">빛이 머무는 자리</h2>
+            <p class="result-desc" id="resultDescription">사라지는 순간을 붙잡지 않고, 그 곁에 잠시 머무는 일. 조용한 빛과 문장들이 한 공간에서 천천히 숨을 고릅니다.</p>
+            <div class="result-foot"><span id="resultMood">고요함의 기록</span><span>제안된 전시 제목</span></div>
+          </div>
+        </section>
+      </section>
+    </main>
+    <footer><span>문장 수집실 · 작은 전시 제목 생성기</span><span>당신의 문장에서 시작합니다</span></footer>
+  </div>
+  <script>
+    (() => {
+      const examples = {
+        quiet: [
+          { title: '빛이 머무는 자리', description: '사라지는 순간을 붙잡지 않고, 그 곁에 잠시 머무는 일. 조용한 빛과 문장들이 한 공간에서 천천히 숨을 고릅니다.' },
+          { title: '천천히 가라앉는 마음', description: '말없이 내려앉은 감정의 결을 따라갑니다. 고요한 장면들 사이에서 우리는 오래 바라보는 법을 다시 배웁니다.' },
+          { title: '작은 침묵의 정원', description: '아무 말도 하지 않는 순간에도 마음은 자라고 있습니다. 낮은 목소리로 피어난 풍경을 한 걸음씩 거닐어 보세요.' }
+        ],
+        warm: [
+          { title: '온기가 번지는 쪽으로', description: '누군가의 다정한 기억이 오늘의 우리에게 닿습니다. 손끝에 남은 온기를 따라 작은 위로의 장면들을 모았습니다.' },
+          { title: '서로의 계절을 안으며', description: '함께 지나온 날들이 서로의 풍경이 됩니다. 익숙한 온기와 반짝이는 기억이 포근한 방 하나를 채웁니다.' },
+          { title: '다정함의 모양', description: '건네지 못한 말과 오래된 마음을 천천히 펼쳐 봅니다. 작고 평범한 다정함이 모여 하나의 풍경이 됩니다.' }
+        ],
+        night: [
+          { title: '밤의 가장자리에서', description: '도시가 잠든 뒤에야 선명해지는 마음이 있습니다. 어둠 속 작은 불빛을 따라 오늘의 끝과 내일의 시작을 만납니다.' },
+          { title: '푸른 시간의 산책', description: '낮과 밤 사이, 이름 붙이기 어려운 시간의 풍경. 희미한 빛과 그림자가 겹쳐 만든 장면 속을 천천히 걷습니다.' },
+          { title: '창마다 다른 밤', description: '저마다의 창에 켜진 불빛은 서로 다른 이야기를 품고 있습니다. 고요한 밤의 조각들을 모아 하나의 별자리로 잇습니다.' }
+        ]
+      };
+      const moodNames = { quiet: '고요함', warm: '따뜻함', night: '밤의 풍경' };
+      const textInput = document.getElementById('sourceText');
+      const counter = document.getElementById('counter');
+      const status = document.getElementById('status');
+      const form = document.getElementById('generatorForm');
+      const generateButton = document.getElementById('generateButton');
+      const buttonLabel = document.getElementById('buttonLabel');
+      const modeSelect = document.getElementById('modeSelect');
+      const accessCodeInput = document.getElementById('accessCode');
+      const apiConfig = document.getElementById('apiConfig');
+      const modeBadge = document.getElementById('modeBadge');
+      let mood = 'quiet';
+      let sequence = 0;
+
+      textInput.addEventListener('input', () => { counter.textContent = `${textInput.value.length} / 3000`; });
+      document.querySelectorAll('[data-mood-choice]').forEach(button => {
+        button.addEventListener('click', () => {
+          mood = button.dataset.moodChoice;
+          document.body.dataset.mood = mood;
+          document.querySelectorAll('[data-mood-choice]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+          document.getElementById('resultMood').textContent = `${moodNames[mood]}의 기록`;
+        });
+      });
+      modeSelect.addEventListener('change', () => {
+        const isApi = modeSelect.value === 'api';
+        apiConfig.classList.toggle('visible', isApi);
+        modeBadge.textContent = isApi ? '실제 API 모드 · 입력 문장 전송' : '예제 모드 · API 연결 없음';
+        status.classList.remove('error');
+        status.textContent = isApi
+          ? '실제 API 모드입니다. 입력한 문장은 지정한 엔드포인트로 전송됩니다.'
+          : '예제 모드로 준비되어 있어요. 입력한 문장은 외부로 전송되지 않습니다.';
+      });
+
+      function showError(message) {
+        status.textContent = message;
+        status.classList.add('error');
+      }
+      function setResult(result) {
+        if (!result || typeof result.title !== 'string' || typeof result.description !== 'string' || !result.title.trim() || !result.description.trim()) {
+          throw new Error('응답에 title과 description 문자열이 필요합니다.');
+        }
+        document.getElementById('resultTitle').textContent = result.title.trim();
+        document.getElementById('resultDescription').textContent = result.description.trim();
+        document.getElementById('resultMood').textContent = `${moodNames[mood]}의 기록`;
+      }
+      async function requestApi(text) {
+        const accessCode = accessCodeInput.value.trim();
+        if (!accessCode) throw new Error('실제 AI 모드를 사용하려면 실습 접속 코드를 입력해주세요.');
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ text, mood, accessCode })
+        });
+        let payload;
+        try { payload = await response.json(); }
+        catch { throw new Error('서버가 올바른 응답을 보내지 않았습니다. 잠시 후 다시 시도해주세요.'); }
+        if (!response.ok) {
+          const messages = {
+            ACCESS_CODE_REQUIRED: '실습 접속 코드를 입력해주세요.',
+            ACCESS_CODE_INVALID: '실습 접속 코드가 올바르지 않습니다. 코드를 확인한 뒤 다시 시도해주세요.',
+            TEXT_REQUIRED: '문장을 입력해주세요.',
+            TEXT_TOO_LONG: '문장은 3000자 이하로 입력한 뒤 다시 시도해주세요.',
+            INVALID_MOOD: '분위기를 다시 선택한 뒤 시도해주세요.',
+            SERVER_NOT_CONFIGURED: '서버 설정이 아직 완료되지 않았습니다. 담당자에게 알려주세요.',
+            OPENAI_AUTH: 'OpenAI 인증에 실패했습니다. 운영자가 Vercel의 OPENAI_API_KEY 설정을 확인해야 합니다.',
+            OPENAI_RATE_LIMIT: 'AI 요청이 잠시 많습니다. 잠시 기다린 뒤 다시 시도해주세요.',
+            OPENAI_QUOTA: 'OpenAI 사용 한도 또는 결제 설정을 확인해야 합니다. 운영자에게 알려주세요.',
+            OPENAI_UNAVAILABLE: 'AI 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.',
+            INVALID_OUTPUT: 'AI 응답을 읽지 못했습니다. 다시 한 번 요청해주세요.'
+          };
+          throw new Error(messages[payload.code] || payload.error || '요청을 처리하지 못했습니다. 잠시 후 다시 시도해주세요.');
+        }
+        return payload;
+      }
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (generateButton.disabled) return;
+        const text = textInput.value.trim();
+        if (modeSelect.value === 'api' && !accessCodeInput.value.trim()) { showError('실제 AI 모드를 사용하려면 실습 접속 코드를 입력해주세요.'); accessCodeInput.focus(); return; }
+        if (!text.length) { showError('문장을 입력해주세요.'); textInput.focus(); return; }
+        if (text.length > 3000) { showError('문장은 3000자 이하로 입력해주세요.'); textInput.focus(); return; }
+        generateButton.disabled = true;
+        buttonLabel.textContent = '문장을 살펴보는 중…';
+        status.classList.remove('error');
+        status.textContent = modeSelect.value === 'api' ? '서버에 전시 문장을 요청하고 있어요.' : '분위기에 어울리는 전시를 고르고 있어요.';
+        const requestId = ++sequence;
+        try {
+          let result;
+          if (modeSelect.value === 'api') {
+            result = await requestApi(text);
+          } else {
+            // 예제 모드는 네트워크/API를 호출하지 않고 분위기별 준비 응답을 순환합니다.
+            await new Promise(resolve => window.setTimeout(resolve, 450));
+            const list = examples[mood];
+            result = list[Math.floor(Math.random() * list.length)];
+          }
+          if (requestId !== sequence) return;
+          setResult(result);
+          status.textContent = modeSelect.value === 'api' ? '전시 문장을 만들었어요. API 응답을 표시했습니다.' : '전시 문장을 만들었어요. 예제 응답을 표시했습니다.';
+        } catch (error) {
+          showError(error instanceof TypeError ? '서버에 연결할 수 없습니다. 배포 상태와 인터넷 연결을 확인한 뒤 다시 시도해주세요.' : (error.message || '문장을 만드는 중 문제가 생겼습니다. 다시 시도해주세요.'));
+        } finally {
+          generateButton.disabled = false;
+          buttonLabel.textContent = '전시 문장 만들기';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
